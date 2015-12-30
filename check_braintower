@@ -47,11 +47,14 @@ import argparse
 import signal
 import sys
 
+
 def readInt(string):
     return int(string.split(':')[1])
 
+
 def readStr(string):
     return ':'.join(string.split(':')[1:]).strip()
+
 
 def readSig(string):
     sig = readStr(string).replace('db', '').strip();
@@ -59,53 +62,58 @@ def readSig(string):
         return 0
     return int(sig)
 
+
 def readPrf(string):
     return string.split(':')[1].strip().split(';')
 
-path   = 'http://%s/check.php'
+
+path = 'http://%s/check.php'
 output = 'BRAINTOWER %s - %s'
 
 # Parse Arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('-H', '--hostname', help='The host address of the SMS gateway', required=True)
 parser.add_argument('-T', '--timeout', help='Seconds before connection times out (default 10)', default=10, type=int)
-parser.add_argument('-Q', '--queue', help='The warning threshold for the amount of queued SMS (default 1)', default=1, type=int)
+parser.add_argument('-Q', '--queue', help='The warning threshold for the amount of queued SMS (default 1)', default=1,
+                    type=int)
 parser.add_argument('-F', '--fail', help='The critical threshold for failed SMS (default 1)', default=1, type=int)
 parser.add_argument('--signal-warning', \
-					help='The warning threshold for the minimum signal strength (in db, default 0)', \
-					default=0, \
-					type=int)
+                    help='The warning threshold for the minimum signal strength (in db, default 0)', \
+                    default=0, \
+                    type=int)
 parser.add_argument('--signal-critical', \
-					help='The critical threshold for the minimum signal strength (in db, default 0)', \
-					default=0, \
-					type=int)
+                    help='The critical threshold for the minimum signal strength (in db, default 0)', \
+                    default=0, \
+                    type=int)
 args = parser.parse_args()
+
 
 # Handle Timeout
 def handle_sigalrm(signum, frame):
     print(output % ('CRITICAL', 'Plugin timed out after %d seconds' % timeout))
     sys.exit(2)
 
+
 signal.signal(signal.SIGALRM, handle_sigalrm)
 signal.alarm(args.timeout)
 
 # Execute Check
-try: 
+try:
     handle = urllib.urlopen(path % (args.hostname))
-    lines  = map(str.strip, handle.readlines())
+    lines = map(str.strip, handle.readlines())
     if handle.getcode() >= 400:
         raise Exception("HTTP Request Failed %d." % handle.getcode())
     if not lines[0].strip().startswith('que:'):
         raise Exception("Unexpected response, invalid check target '%s'?" & args.hostname)
 
-    que    = readInt(lines[0])
+    que = readInt(lines[0])
     failed = readInt(lines[1])
-    total  = readInt(lines[3])
+    total = readInt(lines[3])
     signal = readSig(lines[2])
-    load   = readPrf(lines[5])
-    value  = float(load[0])
-    warn   = float(load[1])
-    crit   = float(load[2])
+    load = readPrf(lines[5])
+    value = float(load[0])
+    warn = float(load[1])
+    crit = float(load[2])
 except Exception as e:
     print(output % ('CRITICAL', e))
     sys.exit(2)
