@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+# COPYRIGHT:
+#
+# This software is Copyright (c) 2015 NETWAYS GmbH, Matthias Jentsch
+#                                <support@netways.de>
+#
+# (Except where explicitly superseded by other copyright notices)
+#
+# LICENSE:
+#
+# Copyright (C) 2015 NETWAYS GmbH <support@netways.de>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+# or see <http://www.gnu.org/licenses/>.
+#
+# CONTRIBUTION SUBMISSION POLICY:
+#
+# (The following paragraph is not intended to limit the rights granted
+# to you to modify and distribute this software under the terms of
+# the GNU General Public License and is only of importance to you if
+# you choose to contribute your changes and enhancements to the
+# community by submitting them to NETWAYS GmbH.)
+#
+# By intentionally submitting any modifications, corrections or
+# derivatives to this work, or any other work intended for use with
+# this Software, to NETWAYS GmbH, you confirm that
+# you are the copyright holder for those contributions and you grant
+# NETWAYS GmbH a nonexclusive, worldwide, irrevocable,
+# royalty-free, perpetual, license to use, copy, create derivative
+# works based on those contributions, and sublicense and distribute
+# those contributions and any derivatives thereof.
+
+import urllib
+import argparse
+import signal
+import sys
+
+def readInt(string):
+    return int(string.split(':')[1])
+
+def readStr(string):
+    return ':'.join(string.split(':')[1:]).strip()
+
+def readSig(string):
+    sig = readStr(string).replace('db', '').strip();
+    if not len(sig):
+        return 0
+    return int(sig)
+
+def readPrf(string):
+    return string.split(':')[1].strip().split(';')
+
+path   = 'http://%s/check.php'
+output = 'BRAINTOWER %s - %s'
+
+# Parse Arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-H', '--hostname', help='The host address of the SMS gateway', required=True)
+parser.add_argument('-T', '--timeout', help='Seconds before connection times out (default 10)', default=10, type=int)
+parser.add_argument('-Q', '--queue', help='The warning threshold for the amount of queued SMS (default 1)', default=1, type=int)
+parser.add_argument('-F', '--fail', help='The critical threshold for failed SMS (default 1)', default=1, type=int)
+parser.add_argument('--signal-warning', \
+					help='The warning threshold for the minimum signal strength (in db, default 0)', \
+					default=0, \
+					type=int)
+parser.add_argument('--signal-critical', \
+					help='The critical threshold for the minimum signal strength (in db, default 0)', \
+					default=0, \
+					type=int)
+args = parser.parse_args()
+
+# Handle Timeout
+def handle_sigalrm(signum, frame):
+    print(output % ('CRITICAL', 'Plugin timed out after %d seconds' % timeout))
+    sys.exit(2)
+
+signal.signal(signal.SIGALRM, handle_sigalrm)
+signal.alarm(args.timeout)
+
+# Execute Check
+try: 
+    handle = urllib.urlopen(path % (args.hostname))
+    lines  = map(str.strip, handle.readlines())
+    if handle.getcode() >= 400:
+        raise Exception("HTTP Request Failed %d." % handle.getcode())
+    if not lines[0].strip().startswith('que:'):
+        raise Exception("Unexpected response, invalid check target '%s'?" & args.hostname)
+
+    que    = readInt(lines[0])
+    failed = readInt(lines[1])
+    total  = readInt(lines[3])
+    signal = readSig(lines[2])
+    load   = readPrf(lines[5])
+    value  = float(load[0])
+    warn   = float(load[1])
+    crit   = float(load[2])
+except Exception as e:
+    print(output % ('CRITICAL', e))
+    sys.exit(2)
+
+if failed >= args.fail or value >= crit or signal <= args.signal_critical:
+    print(output % ('CRITICAL', ' '.join(lines)))
+    sys.exit(2)
+
+# Return
+if que >= args.queue or value >= warn or signal <= args.signal_warning:
+    print(output % ('WARNING', ' '.join(lines)))
+    sys.exit(1)
+
+print(output % ('OK', ' '.join(lines)))
+sys.exit(0)
