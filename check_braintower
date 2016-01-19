@@ -111,19 +111,16 @@ try:
     total = readInt(lines[3])
     signal = readSig(lines[2])
     load = readPrf(lines[5])
-    value = float(load[0])
-    warn = float(load[1])
-    crit = float(load[2])
 except Exception as e:
     print(output % ('CRITICAL', e))
     sys.exit(2)
 
-if failed >= args.fail or value >= crit or signal <= args.signal_critical:
+if failed >= args.fail or signal <= args.signal_critical:
     print(output % ('CRITICAL', ' '.join(lines)))
     sys.exit(2)
 
 # Return
-if que >= args.queue or value >= warn or signal <= args.signal_warning:
+if que >= args.queue or signal <= args.signal_warning:
     print(output % ('WARNING', ' '.join(lines)))
     sys.exit(1)
 
