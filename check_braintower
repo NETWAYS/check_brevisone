@@ -57,7 +57,7 @@ def readStr(string):
 
 
 def readSig(string):
-    sig = readStr(string).replace('db', '').strip();
+    sig = readStr(string).replace('dBm', '').strip();
     if not len(sig):
         return 0
     return int(sig)

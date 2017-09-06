@@ -16,3 +16,12 @@ releases:
         url: "file:///check_braintower"
         description: Python implementation
         checksum: dbff5c34c22699f4123b96d43fccf402
+  -
+    name: 1.2
+    description: "1.2 Release"
+    files:
+      -
+        name: check_braintower
+        url: "file:///check_braintower"
+        description: Python implementation
+        checksum: 47ae494b002f98b0f667511fa894ea28
