@@ -57,7 +57,7 @@ def readStr(string):
 
 
 def readSig(string):
-    sig = readStr(string).replace('dBm', '').strip();
+    sig = readStr(string).replace('db', '').replace('dBm', '').strip();
     if not len(sig):
         return 0
     return int(sig)
@@ -90,7 +90,7 @@ args = parser.parse_args()
 
 # Handle Timeout
 def handle_sigalrm(signum, frame):
-    print(output % ('CRITICAL', 'Plugin timed out after %d seconds' % timeout))
+    print(output % ('CRITICAL', 'Plugin timed out after %d seconds' % args.timeout))
     sys.exit(2)
 
 
