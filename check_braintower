@@ -47,6 +47,7 @@ import argparse
 import signal
 import sys
 import ssl
+from functools import partial
 
 
 def readInt(string):
@@ -72,14 +73,27 @@ def readPrf(string):
     return string.split(':')[1].strip().split(';')
 
 
+def output(label, state=0, lines=[], perfdata={}):
+    pluginoutput = 'BRAINTOWER' + ' ' + str(label)
+
+    if len(lines):
+        pluginoutput += ' - '
+        pluginoutput += ' '.join(lines)
+
+    if perfdata:
+        pluginoutput += '|'
+        pluginoutput += ' '.join(["'" + key + "'" + '=' + str(value) for key, value in perfdata.iteritems()])
+
+    print pluginoutput
+    sys.exit(state)
+
+
 # Handle Timeout
-def handle_sigalrm(signum, frame):
-    print(output % ('CRITICAL', 'Plugin timed out after %d seconds' % args.timeout))
-    sys.exit(2)
+def handle_sigalrm(signum, frame, timeout=None):
+    output('CRITICAL - Plugin timed out after %d seconds' % timeout, 2)
 
 
 path = '%s://%s/check.php'
-output = 'BRAINTOWER %s - %s'
 
 # Parse Arguments
 parser = argparse.ArgumentParser()
@@ -108,7 +122,7 @@ parser.add_argument('--protocol',
 
 args = parser.parse_args()
 
-signal.signal(signal.SIGALRM, handle_sigalrm)
+signal.signal(signal.SIGALRM, partial(handle_sigalrm, timeout=args.timeout))
 signal.alarm(args.timeout)
 
 # Execute Check
@@ -131,19 +145,21 @@ try:
     total = readInt(lines[3])
     signal = readSig(lines[2])
     load = readPrf(lines[5])
+
+    perfdata = {
+        'que': que,
+        'failed': failed,
+        'total': total,
+        'signal': signal
+    }
 except Exception as e:
-    print(output % ('CRITICAL', e))
-    sys.exit(2)
+    output(e, 2)
 
 if failed >= args.fail or signal <= args.signal_critical:
-    print(output % ('CRITICAL', ' '.join(lines)))
-    sys.exit(2)
+    output('CRITICAL', 2, lines=lines, perfdata=perfdata)
 
 # Return
 if que >= args.queue or signal <= args.signal_warning:
-    print(output % ('WARNING', ' '.join(lines)))
-    sys.exit(1)
+    output('WARNING', 1, lines=lines, perfdata=perfdata)
 
-print(output % ('OK', ' '.join(lines)))
-
-sys.exit(0)
+output('OK', 0)
