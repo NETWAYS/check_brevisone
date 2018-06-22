@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # COPYRIGHT:
 #
-# This software is Copyright (c) 2015 NETWAYS GmbH, Matthias Jentsch
+# This software is Copyright (c) 2018 NETWAYS GmbH, Matthias Jentsch
 #                                <support@netways.de>
 #
 # (Except where explicitly superseded by other copyright notices)
@@ -46,9 +46,11 @@ import urllib
 import argparse
 import signal
 import sys
+import os
 import ssl
 from functools import partial
 
+__version__ = '1.4.0'
 
 def readInt(string):
     try:
@@ -94,9 +96,11 @@ def handle_sigalrm(signum, frame, timeout=None):
 
 
 path = '%s://%s/check.php'
+prog = os.path.basename(sys.argv[0])
 
 # Parse Arguments
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(prog=prog)
+parser.add_argument('-V', '--version', action='version', version='%(prog)s v' + sys.modules[__name__].__version__)
 
 parser.add_argument('-H', '--hostname', help='The host address of the SMS gateway', required=True)
 parser.add_argument('-T', '--timeout', help='Seconds before connection times out (default 10)', default=10, type=int)
