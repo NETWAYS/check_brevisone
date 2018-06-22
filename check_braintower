@@ -8,7 +8,7 @@
 #
 # LICENSE:
 #
-# Copyright (C) 2015 NETWAYS GmbH <support@netways.de>
+# Copyright (C) 2018 NETWAYS GmbH <support@netways.de>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ from functools import partial
 
 __version__ = '1.4.0'
 
+
 def readInt(string):
     try:
         return int(string.split(':')[1])
@@ -64,7 +65,7 @@ def readStr(string):
 
 
 def readSig(string):
-    sig = readStr(string).replace('db', '').replace('dBm', '').strip();
+    sig = readStr(string).replace('db', '').replace('dBm', '').strip()
     try:
         return int(sig)
     except ValueError:
@@ -75,8 +76,13 @@ def readPrf(string):
     return string.split(':')[1].strip().split(';')
 
 
-def output(label, state=0, lines=[], perfdata={}):
-    pluginoutput = 'BRAINTOWER' + ' ' + str(label)
+def output(label, state=0, lines=None, perfdata=None, name='BRAINTOWER'):
+    if lines is None:
+        lines = []
+    if perfdata is None:
+        perfdata = {}
+
+    pluginoutput = name + ': ' + str(label)
 
     if len(lines):
         pluginoutput += ' - '
@@ -95,75 +101,79 @@ def handle_sigalrm(signum, frame, timeout=None):
     output('CRITICAL - Plugin timed out after %d seconds' % timeout, 2)
 
 
-path = '%s://%s/check.php'
-prog = os.path.basename(sys.argv[0])
+if __name__ == '__main__':
+    path = '%s://%s/check.php'
+    prog = os.path.basename(sys.argv[0])
+    output = partial(output, name=prog)
+    
+    # Parse Arguments
+    parser = argparse.ArgumentParser(prog=prog)
+    parser.add_argument('-V', '--version', action='version', version='%(prog)s v' + sys.modules[__name__].__version__)
+    
+    parser.add_argument('-H', '--hostname', help='The host address of the SMS gateway', required=True)
+    parser.add_argument('-T', '--timeout', help='Seconds before connection times out (default 10)',
+                        default=10,
+                        type=int)
+    parser.add_argument('-Q', '--queue', help='The warning threshold for the amount of queued SMS (default 1)',
+                        default=1,
+                        type=int)
+    parser.add_argument('-F', '--fail', help='The critical threshold for failed SMS (default 1)', default=1, type=int)
+    parser.add_argument('--signal-warning',
+                        help='The warning threshold for the minimum signal strength (in db, default 0)',
+                        default=0,
+                        type=int)
+    parser.add_argument('--signal-critical',
+                        help='The critical threshold for the minimum signal strength (in db, default 0)',
+                        default=0,
+                        type=int)
+    parser.add_argument('--ssl-insecure',
+                        dest='insecure',
+                        action='store_true',
+                        default=False,
+                        help='Allow insecure SSL connections (default False)')
+    parser.add_argument('--protocol',
+                        default='https',
+                        help='HTTP protocol, use one of http or https (default https)')
+    
+    args = parser.parse_args()
+    
+    signal.signal(signal.SIGALRM, partial(handle_sigalrm, timeout=args.timeout))
+    signal.alarm(args.timeout)
+    
+    # Execute Check
+    try:
+        context = None
+    
+        if args.insecure is True:
+            context = ssl._create_unverified_context()
+    
+        handle = urllib.urlopen(path % (args.protocol, args.hostname), context=context)
+        lines = map(str.strip, handle.readlines())
+    
+        if handle.getcode() >= 400:
+            raise IOError("HTTP Request Failed %d." % handle.getcode())
+        if not lines[0].strip().startswith('que:'):
+            raise RuntimeError("Unexpected response, invalid check target '%s'?" % args.hostname)
+    
+        que = readInt(lines[0])
+        failed = readInt(lines[1])
+        total = readInt(lines[3])
+        signal_strength = readSig(lines[2])
+    
+        perfdata = {
+            'que': que,
+            'failed': failed,
+            'total': total,
+            'signal': signal_strength
+        }
 
-# Parse Arguments
-parser = argparse.ArgumentParser(prog=prog)
-parser.add_argument('-V', '--version', action='version', version='%(prog)s v' + sys.modules[__name__].__version__)
+        if failed >= args.fail or signal_strength <= args.signal_critical:
+            output('CRITICAL', 2, lines=lines, perfdata=perfdata)
 
-parser.add_argument('-H', '--hostname', help='The host address of the SMS gateway', required=True)
-parser.add_argument('-T', '--timeout', help='Seconds before connection times out (default 10)', default=10, type=int)
-parser.add_argument('-Q', '--queue', help='The warning threshold for the amount of queued SMS (default 1)', default=1,
-                    type=int)
-parser.add_argument('-F', '--fail', help='The critical threshold for failed SMS (default 1)', default=1, type=int)
-parser.add_argument('--signal-warning',
-                    help='The warning threshold for the minimum signal strength (in db, default 0)', \
-                    default=0, \
-                    type=int)
-parser.add_argument('--signal-critical',
-                    help='The critical threshold for the minimum signal strength (in db, default 0)', \
-                    default=0,
-                    type=int)
-parser.add_argument('--ssl-insecure',
-                    dest='insecure',
-                    action='store_true',
-                    default=False,
-                    help='Allow insecure SSL connections (default False)')
-parser.add_argument('--protocol',
-                    default='https',
-                    help='HTTP protocol, use one of http or https (default https)')
+        # Return
+        if que >= args.queue or signal_strength <= args.signal_warning:
+            output('WARNING', 1, lines=lines, perfdata=perfdata)
 
-args = parser.parse_args()
-
-signal.signal(signal.SIGALRM, partial(handle_sigalrm, timeout=args.timeout))
-signal.alarm(args.timeout)
-
-# Execute Check
-try:
-    context = None
-
-    if args.insecure is True:
-        context=ssl._create_unverified_context()
-
-    handle = urllib.urlopen(path % (args.protocol, args.hostname), context=context)
-    lines = map(str.strip, handle.readlines())
-
-    if handle.getcode() >= 400:
-        raise IOError("HTTP Request Failed %d." % handle.getcode())
-    if not lines[0].strip().startswith('que:'):
-        raise IOError("Unexpected response, invalid check target '%s'?" & args.hostname)
-
-    que = readInt(lines[0])
-    failed = readInt(lines[1])
-    total = readInt(lines[3])
-    signal = readSig(lines[2])
-    load = readPrf(lines[5])
-
-    perfdata = {
-        'que': que,
-        'failed': failed,
-        'total': total,
-        'signal': signal
-    }
-except Exception as e:
-    output(e, 2)
-
-if failed >= args.fail or signal <= args.signal_critical:
-    output('CRITICAL', 2, lines=lines, perfdata=perfdata)
-
-# Return
-if que >= args.queue or signal <= args.signal_warning:
-    output('WARNING', 1, lines=lines, perfdata=perfdata)
-
-output('OK', 0)
+        output('OK', 0, lines=lines, perfdata=perfdata)
+    except Exception as e:
+        output(e, 2)
