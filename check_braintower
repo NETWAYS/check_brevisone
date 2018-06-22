@@ -46,10 +46,14 @@ import urllib
 import argparse
 import signal
 import sys
+import ssl
 
 
 def readInt(string):
-    return int(string.split(':')[1])
+    try:
+        return int(string.split(':')[1])
+    except ValueError:
+        return 0
 
 
 def readStr(string):
@@ -58,34 +62,14 @@ def readStr(string):
 
 def readSig(string):
     sig = readStr(string).replace('db', '').replace('dBm', '').strip();
-    if not len(sig):
+    try:
+        return int(sig)
+    except ValueError:
         return 0
-    return int(sig)
 
 
 def readPrf(string):
     return string.split(':')[1].strip().split(';')
-
-
-path = 'http://%s/check.php'
-output = 'BRAINTOWER %s - %s'
-
-# Parse Arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-H', '--hostname', help='The host address of the SMS gateway', required=True)
-parser.add_argument('-T', '--timeout', help='Seconds before connection times out (default 10)', default=10, type=int)
-parser.add_argument('-Q', '--queue', help='The warning threshold for the amount of queued SMS (default 1)', default=1,
-                    type=int)
-parser.add_argument('-F', '--fail', help='The critical threshold for failed SMS (default 1)', default=1, type=int)
-parser.add_argument('--signal-warning', \
-                    help='The warning threshold for the minimum signal strength (in db, default 0)', \
-                    default=0, \
-                    type=int)
-parser.add_argument('--signal-critical', \
-                    help='The critical threshold for the minimum signal strength (in db, default 0)', \
-                    default=0, \
-                    type=int)
-args = parser.parse_args()
 
 
 # Handle Timeout
@@ -94,17 +78,53 @@ def handle_sigalrm(signum, frame):
     sys.exit(2)
 
 
+path = '%s://%s/check.php'
+output = 'BRAINTOWER %s - %s'
+
+# Parse Arguments
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-H', '--hostname', help='The host address of the SMS gateway', required=True)
+parser.add_argument('-T', '--timeout', help='Seconds before connection times out (default 10)', default=10, type=int)
+parser.add_argument('-Q', '--queue', help='The warning threshold for the amount of queued SMS (default 1)', default=1,
+                    type=int)
+parser.add_argument('-F', '--fail', help='The critical threshold for failed SMS (default 1)', default=1, type=int)
+parser.add_argument('--signal-warning',
+                    help='The warning threshold for the minimum signal strength (in db, default 0)', \
+                    default=0, \
+                    type=int)
+parser.add_argument('--signal-critical',
+                    help='The critical threshold for the minimum signal strength (in db, default 0)', \
+                    default=0,
+                    type=int)
+parser.add_argument('--ssl-insecure',
+                    dest='insecure',
+                    action='store_true',
+                    default=False,
+                    help='Allow insecure SSL connections (default False)')
+parser.add_argument('--protocol',
+                    default='https',
+                    help='HTTP protocol, use one of http or https (default https)')
+
+args = parser.parse_args()
+
 signal.signal(signal.SIGALRM, handle_sigalrm)
 signal.alarm(args.timeout)
 
 # Execute Check
 try:
-    handle = urllib.urlopen(path % (args.hostname))
+    context = None
+
+    if args.insecure is True:
+        context=ssl._create_unverified_context()
+
+    handle = urllib.urlopen(path % (args.protocol, args.hostname), context=context)
     lines = map(str.strip, handle.readlines())
+
     if handle.getcode() >= 400:
-        raise Exception("HTTP Request Failed %d." % handle.getcode())
+        raise IOError("HTTP Request Failed %d." % handle.getcode())
     if not lines[0].strip().startswith('que:'):
-        raise Exception("Unexpected response, invalid check target '%s'?" & args.hostname)
+        raise IOError("Unexpected response, invalid check target '%s'?" & args.hostname)
 
     que = readInt(lines[0])
     failed = readInt(lines[1])
@@ -125,4 +145,5 @@ if que >= args.queue or signal <= args.signal_warning:
     sys.exit(1)
 
 print(output % ('OK', ' '.join(lines)))
+
 sys.exit(0)
