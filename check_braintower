@@ -50,7 +50,7 @@ import os
 import ssl
 from functools import partial
 
-__version__ = '1.4.0'
+__version__ = '1.4.1'
 
 
 def readInt(string):
