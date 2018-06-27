@@ -142,12 +142,19 @@ if __name__ == '__main__':
     
     # Execute Check
     try:
-        context = None
-    
-        if args.insecure is True:
-            context = ssl._create_unverified_context()
-    
-        handle = urllib.urlopen(path % (args.protocol, args.hostname), context=context)
+
+        version = tuple(map(int, (sys.version.split(' ')[0].split("."))))
+
+        if version >= (2, 7, 9):
+            context = None
+            if args.insecure is True:
+                context = ssl._create_unverified_context()
+            handle = urllib.urlopen(path % (args.protocol, args.hostname), context=context)
+        else:
+            if args.insecure is True:
+                raise RuntimeError('--ssl-insecure is not compatible with Python < 2.7.9. Try without and good luck!')
+            handle = urllib.urlopen(path % (args.protocol, args.hostname))
+
         lines = map(str.strip, handle.readlines())
     
         if handle.getcode() >= 400:
