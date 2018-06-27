@@ -143,7 +143,7 @@ if __name__ == '__main__':
     # Execute Check
     try:
 
-        version = tuple(map(int, (sys.version.split(' ')[0].split("."))))
+        version = (sys.version_info.major, sys.version_info.minor, sys.version_info.micro, )
 
         if version >= (2, 7, 9):
             context = None
