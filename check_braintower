@@ -65,7 +65,7 @@ def readStr(string):
 
 
 def readSig(string):
-    sig = readStr(string).replace('db', '').replace('dBm', '').strip()
+    sig = readStr(string).replace('-', '').replace('db', '').replace('dBm', '').strip()
     try:
         return int(sig)
     except ValueError:
