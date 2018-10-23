@@ -120,11 +120,11 @@ if __name__ == '__main__':
     parser.add_argument('-F', '--fail', help='The critical threshold for failed SMS (default 1)', default=1, type=int)
     parser.add_argument('--signal-warning',
                         help='The warning threshold for the minimum signal strength (in db, default 0)',
-                        default=0,
+                        default=-91,
                         type=int)
     parser.add_argument('--signal-critical',
                         help='The critical threshold for the minimum signal strength (in db, default 0)',
-                        default=0,
+                        default=-107,
                         type=int)
     parser.add_argument('--ssl-insecure',
                         dest='insecure',
