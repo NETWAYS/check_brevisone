@@ -92,7 +92,7 @@ def output(label, state=0, lines=None, perfdata=None, name='BRAINTOWER'):
         pluginoutput += '|'
         pluginoutput += ' '.join(["'" + key + "'" + '=' + str(value) for key, value in perfdata.iteritems()])
 
-    print pluginoutput
+    print(pluginoutput)
     sys.exit(state)
 
 
