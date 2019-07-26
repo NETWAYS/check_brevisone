@@ -42,12 +42,12 @@
 # works based on those contributions, and sublicense and distribute
 # those contributions and any derivatives thereof.
 
-import urllib
+import requests
 import argparse
 import signal
 import sys
 import os
-import ssl
+
 from functools import partial
 
 __version__ = '1.4.1'
@@ -90,7 +90,7 @@ def output(label, state=0, lines=None, perfdata=None, name='BRAINTOWER'):
 
     if perfdata:
         pluginoutput += '|'
-        pluginoutput += ' '.join(["'" + key + "'" + '=' + str(value) for key, value in perfdata.iteritems()])
+        pluginoutput += ' '.join(["'" + key + "'" + '=' + str(value) for key, value in perfdata.items()])
 
     print(pluginoutput)
     sys.exit(state)
@@ -142,31 +142,30 @@ if __name__ == '__main__':
     
     # Execute Check
     try:
+        if args.insecure is True:
+            requests.packages.urllib3.disable_warnings()
 
-        version = tuple(sys.version_info[:3])
+        response = requests.get('https://192.168.242.40/check.php', verify=(not args.insecure))
 
-        if version >= (2, 7, 9):
-            context = None
-            if args.insecure is True:
-                context = ssl._create_unverified_context()
-            handle = urllib.urlopen(path % (args.protocol, args.hostname), context=context)
-        else:
-            if args.insecure is True:
-                raise RuntimeError('--ssl-insecure is not compatible with Python < 2.7.9. Try without and good luck!')
-            handle = urllib.urlopen(path % (args.protocol, args.hostname))
+        details = response.text.split("\n")
 
-        lines = map(str.strip, handle.readlines())
-    
-        if handle.getcode() >= 400:
-            raise IOError("HTTP Request Failed %d." % handle.getcode())
+        lines = []
+        for item in details:
+            if not item:
+                continue
+
+            lines.append(str(item).strip())
+
+        if response.status_code >= 400:
+            raise IOError("HTTP Request Failed %d." % response.status_code)
         if not lines[0].strip().startswith('que:'):
             raise RuntimeError("Unexpected response, invalid check target '%s'?" % args.hostname)
-    
+
         que = readInt(lines[0])
         failed = readInt(lines[1])
         total = readInt(lines[3])
         signal_strength = readSig(lines[2])
-    
+
         perfdata = {
             'que': que,
             'failed': failed,
