@@ -2,6 +2,16 @@
 
 Plugin to check signal strength of Braintower SMS gateways.
 
+# Installation
+
+Debian/Ubuntu:
+
+    apt install python-requests
+    
+RHEL/CentOS 7:
+
+    yum install python-requests
+
 # Usage
 
     usage: check_braintower [-h] -H HOSTNAME [-T TIMEOUT] [-Q QUEUE] [-F FAIL]
@@ -30,5 +40,4 @@ GPL Version 2, see head of the plugin file for more information.
 
 # Version
 
-1.4.1
-
+1.4.2
