@@ -43,4 +43,4 @@ GPL Version 2, see head of the plugin file for more information.
 
 # Version
 
-1.4.2
+2.0.0
