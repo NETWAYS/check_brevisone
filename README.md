@@ -1,13 +1,9 @@
 # check_brevisone
 
-Plugin to check signal strength of Braintower SMS gateways.
+Plugin to check signal strength and availability of the [Brevis.One SMS gateway](https://brevis.one).
 
-Important Note:
->Since BASIS Europe acquired the Braintower SMS Gateways business, the distribution
->and development will be continued under the new brandname brevis.one. The Plugin functionality
->and code of check_braintower stays the same, except for the new name: check_brevisone
->
->For more information see: [brevis.one](https://brevis.one/en/), [BASIS europe](https://www.basis-europe.eu/)
+This plugin was previously known as check_braintower, it was renamed due to a product name change.
+You should be able to check gateways running older versions as well.
 
 # Installation
 

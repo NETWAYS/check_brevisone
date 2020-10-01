@@ -106,9 +106,12 @@ if __name__ == '__main__':
     path = '%s://%s/check.php'
     prog = os.path.basename(sys.argv[0])
     output = partial(output, name=prog)
+    readme = 'Plugin to check signal strength and availability of the Brevis.One SMS gateway.\n' \
+             'This plugin was previously known as check_braintower, it was renamed due to a product name change. ' \
+             'You should be able to check gateways running older versions as well.'
     
     # Parse Arguments
-    parser = argparse.ArgumentParser(prog=prog)
+    parser = argparse.ArgumentParser(prog=prog, description=readme)
     parser.add_argument('-V', '--version', action='version', version='%(prog)s v' + sys.modules[__name__].__version__)
     
     parser.add_argument('-H', '--hostname', help='The host address of the SMS gateway', required=True)
