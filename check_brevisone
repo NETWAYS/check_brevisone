@@ -51,7 +51,7 @@ import os
 from functools import partial
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
-__version__ = '1.4.1'
+__version__ = '2.0.0'
 
 
 def readInt(string):
