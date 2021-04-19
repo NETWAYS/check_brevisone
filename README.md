@@ -7,10 +7,14 @@ You should be able to check gateways running older versions as well.
 
 # Installation
 
-Debian/Ubuntu:
+Debian/Ubuntu (pre focal):
 
     apt install python-requests
-    
+
+Ubuntu (focal and later):
+
+    apt install python3-requests
+
 RHEL/CentOS 7:
 
     yum install python-requests
@@ -25,13 +29,13 @@ RHEL/CentOS 7:
 # Example
 
     ./check_brevisone -H 192.168.1.1 --signal-warning -85 --signal-critical -90
-    
+
     BREVISONE OK - que: 0 failed: 0 signal: -83db total: 0 state: Idle load: 0;0.03;0.05 time: 1451320254 disk free: 647569408 uptime: 9 min, 0 users
 
 # Advanced
 
 To connect to the HTTP endpoint (unencrypted) you can use ```--protocol=http```. Since firmware version 4.0 HTTPS is the
-default. I you using self-certified certificates on the appliance, use ```--ssl-insecure``` to disable verification. 
+default. I you using self-certified certificates on the appliance, use ```--ssl-insecure``` to disable verification.
 
 # Copyright
 
