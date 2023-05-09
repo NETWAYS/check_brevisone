@@ -1,2 +1,4 @@
-.DS_Store/
-.idea/
+.venv
+venv/
+__pycache__/
+.coverage
