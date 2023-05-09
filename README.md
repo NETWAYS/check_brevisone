@@ -37,14 +37,19 @@ RHEL/CentOS 7:
 To connect to the HTTP endpoint (unencrypted) you can use ```--protocol=http```. Since firmware version 4.0 HTTPS is the
 default. I you using self-certified certificates on the appliance, use ```--ssl-insecure``` to disable verification.
 
-# Copyright
+## License
 
-(c) 2020, [NETWAYS GmbH](http://www.netways.de), info@netways.de
+Copyright (C) 2020 [NETWAYS GmbH](mailto:info@netways.de)
 
-# License
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-GPL Version 2, see head of the plugin file for more information.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-# Version
-
-2.0.0
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
