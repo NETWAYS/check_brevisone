@@ -28,8 +28,9 @@ OK - que: 0 failed: 0 signal: -83db total: 0 state: Idle load: 0;0.03;0.05 time:
 
 ## Advanced
 
-To connect to the HTTP endpoint (unencrypted) you can use ```--protocol=http```. Since firmware version 4.0 HTTPS is the
-default. I you using self-certified certificates on the appliance, use ```--ssl-insecure``` to disable verification.
+Since firmware version 4.0 HTTPS is the default. To connect to a unencrypted HTTP endpoint you can use ```--protocol=http```.
+
+I you are using a self-certified certificate, use ```--ssl-insecure``` to disable verification.
 
 # License
 

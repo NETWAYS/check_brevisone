@@ -97,8 +97,9 @@ def generate_output(status='UNKNOWN', lines=None, perfdata=None):
     if lines:
         pluginoutput += ' - ' + ' '.join(lines)
 
-
     # Perfdata we explicitly extracted from the data
+    # The perfdata var should be a dict, we normalize the keys and
+    # transform everything into the expected output 'key 1': 3 > key_1=3
     if perfdata:
         pluginoutput += '|' + ' '.join([key.lower().replace(" ", "_").replace(",", "") + '=' + str(value) for key, value in perfdata.items()])
 
@@ -107,7 +108,7 @@ def generate_output(status='UNKNOWN', lines=None, perfdata=None):
 
 def commandline(args):
     """
-    Parse commandline arguments
+    Parse commandline arguments.
     """
     parser = ArgumentParser(description= "check_brevisone (Version: %s)" % (__version__))
 
@@ -144,8 +145,7 @@ def commandline(args):
 
 def get_data(base_url, timeout, insecure):
     """
-    Requests the data via HTTP
-    Basically a wrapper so that we can mock during tests
+    Requests the data via HTTP. Basically a wrapper around urllib.
 
     What we expect from the server:
 
@@ -162,12 +162,15 @@ def get_data(base_url, timeout, insecure):
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
 
+    # Example URL: https://mybrevisone/check.php
     url = urljoin(base_url, "check.php")
     response = urllib.request.urlopen(url=url, timeout=timeout, context=ctx) # pylint: disable=consider-using-with
 
     if response.getcode() >= 400:
         raise RuntimeError("Could not get response")
 
+    # We expect at least the que name otherwise we
+    # assume none of the data got sent
     resp = response.read().decode()
     if "que:" not in resp:
         raise RuntimeError("Invalid response")
