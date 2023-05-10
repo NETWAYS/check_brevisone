@@ -5,46 +5,46 @@ Plugin to check signal strength and availability of the [Brevis.One SMS gateway]
 This plugin was previously known as check_braintower, it was renamed due to a product name change.
 You should be able to check gateways running older versions as well.
 
-# Installation
+## Installation
 
-Debian/Ubuntu (pre focal):
+The plugin requires at least Python 3.
 
-    apt install python-requests
+## Usage
 
-Ubuntu (focal and later):
+```
+check_brevisone [-h] -H HOSTNAME [-T TIMEOUT] [-Q QUEUE] [-F FAIL]
+       [--signal-warning SIGNAL_WARNING]
+       [--signal-critical SIGNAL_CRITICAL] [--ssl-insecure]
+       [--protocol PROTOCOL]
+```
 
-    apt install python3-requests
+## Example
 
-RHEL/CentOS 7:
+```
+check_brevisone -H 192.168.1.1 --signal-warning -85 --signal-critical -90
 
-    yum install python-requests
+OK - que: 0 failed: 0 signal: -83db total: 0 state: Idle load: 0;0.03;0.05 time: 1451320254 disk free: 647569408 uptime: 9 min, 0 users
+```
 
-# Usage
+## Advanced
 
-    usage: check_brevisone [-h] -H HOSTNAME [-T TIMEOUT] [-Q QUEUE] [-F FAIL]
-                        [--signal-warning SIGNAL_WARNING]
-                        [--signal-critical SIGNAL_CRITICAL] [--ssl-insecure]
-                        [--protocol PROTOCOL]
+Since firmware version 4.0 HTTPS is the default. To connect to a unencrypted HTTP endpoint you can use ```--protocol=http```.
 
-# Example
-
-    ./check_brevisone -H 192.168.1.1 --signal-warning -85 --signal-critical -90
-
-    BREVISONE OK - que: 0 failed: 0 signal: -83db total: 0 state: Idle load: 0;0.03;0.05 time: 1451320254 disk free: 647569408 uptime: 9 min, 0 users
-
-# Advanced
-
-To connect to the HTTP endpoint (unencrypted) you can use ```--protocol=http```. Since firmware version 4.0 HTTPS is the
-default. I you using self-certified certificates on the appliance, use ```--ssl-insecure``` to disable verification.
-
-# Copyright
-
-(c) 2020, [NETWAYS GmbH](http://www.netways.de), info@netways.de
+I you are using a self-certified certificate, use ```--ssl-insecure``` to disable verification.
 
 # License
 
-GPL Version 2, see head of the plugin file for more information.
+Copyright (C) 2020 [NETWAYS GmbH](mailto:info@netways.de)
 
-# Version
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-2.0.0
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.

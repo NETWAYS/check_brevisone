@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # COPYRIGHT:
 #
 # This software is Copyright (c) 2018 NETWAYS GmbH, Matthias Jentsch
@@ -42,78 +42,78 @@
 # works based on those contributions, and sublicense and distribute
 # those contributions and any derivatives thereof.
 
-import requests
-import argparse
-import signal
+from argparse import ArgumentParser
+import urllib.request
+from urllib.parse import urljoin
+import ssl
 import sys
-import os
-
-from functools import partial
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
-__version__ = '2.0.0'
 
 
-def readInt(string):
+# Return code level
+# 0 - OK       - The plugin was able to check the service and it appeared to be functioning properly
+# 1 - WARNING  - The plugin was able to check the service, but it appeared to be above some "warning"
+#                threshold or did not appear to be working properly
+# 2 - CRITICAL - The plugin detected that either the service was not running or it was above some "critical" threshold
+# 3 - UNKNOWN  - Invalid command line arguments were supplied to the plugin or low-level failures
+OK = 0
+WARNING = 1
+CRITICAL = 2
+UNKNOWN = 3
+
+__version__ = '3.0.0'
+
+
+def read_int(string):
+    """
+    Get and sanitize integer data
+    """
     try:
         return int(string.split(':')[1])
     except ValueError:
         return 0
 
 
-def readStr(string):
-    return ':'.join(string.split(':')[1:]).strip()
+def read_signal(string):
+    """
+    Get and sanitize the signal data
+    """
+    sig = ':'.join(string.split(':')[1:]).strip()
+    sig = sig.replace('db', '').replace('dBm', '').strip()
 
-
-def readSig(string):
-    sig = readStr(string).replace('db', '').replace('dBm', '').strip()
     try:
         return int(sig)
     except ValueError:
         return 0
 
 
-def readPrf(string):
-    return string.split(':')[1].strip().split(';')
+def generate_output(status='UNKNOWN', lines=None, perfdata=None):
+    """
+    Generate plugin data output with status and perfdata
+    """
 
+    pluginoutput = str(status)
 
-def output(label, state=0, lines=None, perfdata=None, name='BREVISONE'):
-    if lines is None:
-        lines = []
-    if perfdata is None:
-        perfdata = {}
+    # All lines we received from the Endpoint
+    if lines:
+        pluginoutput += ' - ' + ' '.join(lines)
 
-    pluginoutput = name + ': ' + str(label)
-
-    if len(lines):
-        pluginoutput += ' - '
-        pluginoutput += ' '.join(lines)
-
+    # Perfdata we explicitly extracted from the data
+    # The perfdata var should be a dict, we normalize the keys and
+    # transform everything into the expected output 'key 1': 3 > key_1=3
     if perfdata:
-        pluginoutput += '|'
-        pluginoutput += ' '.join(["'" + key + "'" + '=' + str(value) for key, value in perfdata.items()])
+        pluginoutput += '|' + ' '.join([key.lower().replace(" ", "_").replace(",", "") + '=' + str(value) for key, value in perfdata.items()])
 
     print(pluginoutput)
-    sys.exit(state)
 
 
-# Handle Timeout
-def handle_sigalrm(signum, frame, timeout=None):
-    output('CRITICAL - Plugin timed out after %d seconds' % timeout, 2)
+def commandline(args):
+    """
+    Parse commandline arguments.
+    """
+    parser = ArgumentParser(description= "check_brevisone (Version: %s)" % (__version__))
 
+    parser.add_argument('-V', '--version', action='version', version='check_brevisone' + __version__)
 
-if __name__ == '__main__':
-    path = '%s://%s/check.php'
-    prog = os.path.basename(sys.argv[0])
-    output = partial(output, name=prog)
-    readme = 'Plugin to check signal strength and availability of the Brevis.One SMS gateway.\n' \
-             'This plugin was previously known as check_braintower, it was renamed due to a product name change. ' \
-             'You should be able to check gateways running older versions as well.'
-    
-    # Parse Arguments
-    parser = argparse.ArgumentParser(prog=prog, description=readme)
-    parser.add_argument('-V', '--version', action='version', version='%(prog)s v' + sys.modules[__name__].__version__)
-    
     parser.add_argument('-H', '--hostname', help='The host address of the SMS gateway', required=True)
     parser.add_argument('-T', '--timeout', help='Seconds before connection times out (default 10)',
                         default=10,
@@ -123,11 +123,11 @@ if __name__ == '__main__':
                         type=int)
     parser.add_argument('-F', '--fail', help='The critical threshold for failed SMS (default 1)', default=1, type=int)
     parser.add_argument('--signal-warning',
-                        help='The warning threshold for the minimum signal strength (in db, default 0)',
+                        help='The warning threshold for the minimum signal strength (in db, default -91)',
                         default=-91,
                         type=int)
     parser.add_argument('--signal-critical',
-                        help='The critical threshold for the minimum signal strength (in db, default 0)',
+                        help='The critical threshold for the minimum signal strength (in db, default -107)',
                         default=-107,
                         type=int)
     parser.add_argument('--ssl-insecure',
@@ -136,54 +136,102 @@ if __name__ == '__main__':
                         default=False,
                         help='Allow insecure SSL connections (default False)')
     parser.add_argument('--protocol',
+                        choices=["http", "https"],
                         default='https',
                         help='HTTP protocol, use one of http or https (default https)')
-    
-    args = parser.parse_args()
-    
-    signal.signal(signal.SIGALRM, partial(handle_sigalrm, timeout=args.timeout))
-    signal.alarm(args.timeout)
-    
-    # Execute Check
+
+    return parser.parse_args(args)
+
+
+def get_data(base_url, timeout, insecure):
+    """
+    Requests the data via HTTP. Basically a wrapper around urllib.
+
+    What we expect from the server:
+
+    HTTP/1.0 200 OK
+    que: foo
+    failed: 0
+    signal_strength: 15 db
+    total: 25
+    """
+
+    # Default context for connection
+    ctx = ssl.create_default_context()
+    if insecure is True:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
+    # Example URL: https://mybrevisone/check.php
+    url = urljoin(base_url, "check.php")
+    response = urllib.request.urlopen(url=url, timeout=timeout, context=ctx) # pylint: disable=consider-using-with
+
+    if response.getcode() >= 400:
+        raise RuntimeError("Could not get response")
+
+    # We expect at least the que name otherwise we
+    # assume none of the data got sent
+    resp = response.read().decode()
+    if "que:" not in resp:
+        raise RuntimeError("Invalid response")
+
+    return resp
+
+def extract_perfdata(lines):
+    """
+    Safely extract perfdata
+    """
+    if len(lines) < 4:
+        return None
+
+    perfdata = {
+        'que': read_int(lines[0]),
+        'failed': read_int(lines[1]),
+        'signal': read_signal(lines[2]),
+        'total': read_int(lines[3])
+    }
+
+    return perfdata
+
+def main(args):
     try:
-        if args.insecure is True:
-            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+        base_url = args.protocol + '://' + args.hostname
+        data = get_data(base_url=base_url,
+                        timeout=args.timeout,
+                        insecure=args.insecure)
+    except Exception as data_exc: # pylint: disable=broad-except
+        print('UNKNOWN - Could not connect to SMS Gateway', data_exc)
+        return UNKNOWN
 
-        response = requests.get(path % (args.protocol, args.hostname), verify=(not args.insecure))
+    # Split up lines and clean up items
+    lines = [str(i).strip() for i in data.split("\n") if i]
+    # Safely extract perfdata, which we'll also use to determine the final status
+    perfdata = extract_perfdata(lines)
 
-        details = response.text.split("\n")
+    if not perfdata:
+        print('UNKNOWN - Could not determine status', perfdata)
+        return UNKNOWN
 
-        lines = []
-        for item in details:
-            if not item:
-                continue
+    # Determine the final status
+    if perfdata['failed'] >= args.fail or perfdata['signal'] <= args.signal_critical:
+        generate_output(status='CRITICAL', lines=lines, perfdata=perfdata)
+        return CRITICAL
 
-            lines.append(str(item).strip())
+    if perfdata['que'] >= args.queue or perfdata['signal'] <= args.signal_warning:
+        generate_output(status='WARNING', lines=lines, perfdata=perfdata)
+        return WARNING
 
-        if response.status_code >= 400:
-            raise IOError("HTTP Request Failed %d." % response.status_code)
-        if not lines[0].strip().startswith('que:'):
-            raise RuntimeError("Unexpected response, invalid check target '%s'?" % args.hostname)
+    generate_output(status='OK', lines=lines, perfdata=perfdata)
+    return OK
 
-        que = readInt(lines[0])
-        failed = readInt(lines[1])
-        total = readInt(lines[3])
-        signal_strength = readSig(lines[2])
 
-        perfdata = {
-            'que': que,
-            'failed': failed,
-            'total': total,
-            'signal': signal_strength
-        }
-
-        if failed >= args.fail or signal_strength <= args.signal_critical:
-            output('CRITICAL', 2, lines=lines, perfdata=perfdata)
-
-        # Return
-        if que >= args.queue or signal_strength <= args.signal_warning:
-            output('WARNING', 1, lines=lines, perfdata=perfdata)
-
-        output('OK', 0, lines=lines, perfdata=perfdata)
-    except Exception as e:
-        output(e, 2)
+if __name__ == '__main__': # pragma: no cover
+    try:
+        ARGS = commandline(sys.argv[1:])
+        sys.exit(main(ARGS))
+    except SystemExit:
+        # Re-throw the exception
+        raise sys.exc_info()[1].with_traceback(sys.exc_info()[2]) # pylint: disable=raise-missing-from
+    except:
+        print("UNKNOWN - Error: %s" % (str(sys.exc_info()[1])))
+        sys.exit(3)
