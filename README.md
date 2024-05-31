@@ -12,25 +12,34 @@ The plugin requires at least Python 3.
 ## Usage
 
 ```
-check_brevisone [-h] -H HOSTNAME [-T TIMEOUT] [-Q QUEUE] [-F FAIL]
-       [--signal-warning SIGNAL_WARNING]
-       [--signal-critical SIGNAL_CRITICAL] [--ssl-insecure]
-       [--protocol PROTOCOL]
+usage: check_brevisone.py [-h] [-V] -H HOSTNAME [-T TIMEOUT] [--ssl-insecure] [--protocol {http,https}] [-d] [--queue-warning QUEUE_WARNING]
+                          [--queue-critical QUEUE_CRITICAL] [--failed-warning FAILED_WARNING] [--failed-critical FAILED_CRITICAL]
+                          [--signal-warning SIGNAL_WARNING] [--signal-critical SIGNAL_CRITICAL] [--disk-warning DISK_WARNING] [--disk-critical DISK_CRITICAL]
+
 ```
 
 ## Example
 
 ```
-check_brevisone -H 192.168.1.1 --signal-warning -85 --signal-critical -90
+check_brevisone -H 192.168.1.1
+[CRITICAL] - Brevis.One SMS Gateway Status
+ \_[CRITICAL] Failed sending: 12
+ \_[OK] Signal strength: 95
+ \_[CRITICAL] Que length: 23
+|que=23 failed=12 signal=95 total=885 time=1713865490 disk=1400246272
 
-OK - que: 0 failed: 0 signal: -83db total: 0 state: Idle load: 0;0.03;0.05 time: 1451320254 disk free: 647569408 uptime: 9 min, 0 users
+check_brevisone -H 192.168.1.1 --protocol http --failed-critical 18 --failed-warning 15 --signal-warning 100 --signal-critical 120
+[CRITICAL] - Brevis.One SMS Gateway Status
+ \_[OK] Failed sending: 12
+ \_[OK] Signal strength: 95
+ \_[CRITICAL] Que length: 23
+|que=23 failed=12 signal=95 total=885 time=1713865490 disk=1400246272
 ```
 
-## Advanced
+Since firmware version 4.0 HTTPS is the default. To connect to a unencrypted HTTP endpoint you can use `--protocol=http`.
+If you are using a self-certified certificate, use `--ssl-insecure` to disable verification.
 
-Since firmware version 4.0 HTTPS is the default. To connect to a unencrypted HTTP endpoint you can use ```--protocol=http```.
-
-I you are using a self-certified certificate, use ```--ssl-insecure``` to disable verification.
+`--disk-warning` and `--disk-critical` don't have defaults, since we don't know the limit of the specific device. Each user will have to check their devices disk capacity and set an appropriate value.
 
 # License
 
