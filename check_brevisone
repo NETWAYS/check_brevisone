@@ -42,7 +42,7 @@
 # works based on those contributions, and sublicense and distribute
 # those contributions and any derivatives thereof.
 
-from argparse import ArgumentParser, ArgumentTypeError
+from argparse import ArgumentParser
 import urllib.request
 from urllib.parse import urljoin
 import ssl
@@ -151,17 +151,7 @@ def commandline(args):
                         required=False,
                         type=int)
 
-    args = parser.parse_args(args)
-
-    if args.disk_warning and not args.disk_critical:
-        parser.print_help()
-        raise ArgumentTypeError("%s: error: --disk-warning requires --disk-critical" % parser.prog)
-
-    if args.disk_critical and not args.disk_warning:
-        parser.print_help()
-        raise ArgumentTypeError("%s: error: --disk-critical requires --disk-warning" % parser.prog)
-
-    return args
+    return parser.parse_args(args)
 
 
 def get_data(base_url, timeout, insecure):
