@@ -69,6 +69,7 @@ STATES = {
     UNKNOWN: "UNKNOWN",
 }
 
+
 def generate_output(status=3, outputs=None, perfdata=None):
     """
     Generate plugin data output with status and perfdata
@@ -86,7 +87,7 @@ def generate_output(status=3, outputs=None, perfdata=None):
     # transform everything into the expected output 'key 1': 3 > key_1=3
     if perfdata:
         pluginoutput += '|'
-        for k,v in perfdata.items():
+        for k, v in perfdata.items():
             if (k and v) and isinstance(v, int):
                 pluginoutput += k.lower().replace(" ", "_").replace(",", "") + '=' + str(v) + ' '
 
@@ -97,7 +98,7 @@ def commandline(args):
     """
     Parse commandline arguments.
     """
-    parser = ArgumentParser(description= "check_brevisone (Version: %s)" % (__version__))
+    parser = ArgumentParser(description="check_brevisone (Version: %s)" % (__version__))
 
     parser.add_argument('-V', '--version', action='version', version='check_brevisone' + __version__)
 
@@ -175,7 +176,7 @@ def get_data(base_url, timeout, insecure):
 
     # Example URL: https://mybrevisone/check.php
     url = urljoin(base_url, "check.php")
-    response = urllib.request.urlopen(url=url, timeout=timeout, context=ctx) # pylint: disable=consider-using-with
+    response = urllib.request.urlopen(url=url, timeout=timeout, context=ctx)  # pylint: disable=consider-using-with
 
     if response.getcode() >= 400:
         raise RuntimeError("Could not get response")
@@ -188,6 +189,7 @@ def get_data(base_url, timeout, insecure):
 
     return resp
 
+
 def parse_data(data):
     """
     Safely extract data from the APIs reponse
@@ -196,8 +198,8 @@ def parse_data(data):
 
     parsed_data = {}
 
-    for l in lines:
-        d = l.split(":")
+    for line in lines:
+        d = line.split(":")
         if len(d) == 2:
             key = d[0].strip()
             value = d[1].strip()
@@ -232,6 +234,7 @@ def worst_state(*states):
 
     return overall
 
+
 def debug_print(debug_flag, message):
     """
     Print debug messages if -d is set.
@@ -240,6 +243,7 @@ def debug_print(debug_flag, message):
         return
 
     print(message)
+
 
 def determine_status(args, perfdata):
     states = []
@@ -287,13 +291,14 @@ def determine_status(args, perfdata):
 
     return states, outputs
 
+
 def main(args):
     try:
         base_url = args.protocol + '://' + args.hostname
         data = get_data(base_url=base_url,
                         timeout=args.timeout,
                         insecure=args.insecure)
-    except Exception as data_exc: # pylint: disable=broad-except
+    except Exception as data_exc:  # pylint: disable=broad-except
         print('UNKNOWN - Could not connect to SMS Gateway', data_exc)
         return UNKNOWN
 
@@ -321,13 +326,16 @@ def main(args):
     return worst_state(*states)
 
 
-if __name__ == '__main__': # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     try:
         ARGS = commandline(sys.argv[1:])
         sys.exit(main(ARGS))
     except SystemExit:
         # Re-throw the exception
-        raise sys.exc_info()[1].with_traceback(sys.exc_info()[2]) # pylint: disable=raise-missing-from
-    except:
-        print("UNKNOWN - Error: %s" % (str(sys.exc_info()[1])))
+        exception = sys.exc_info()[1]
+
+        if exception is not None:
+            raise exception.with_traceback(sys.exc_info()[2])  # pylint: disable=raise-missing-from
+    except Exception as excpt:
+        print("UNKNOWN - Error: %s" % (excpt))
         sys.exit(3)
