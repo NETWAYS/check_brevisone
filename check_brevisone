@@ -336,6 +336,6 @@ if __name__ == '__main__':  # pragma: no cover
 
         if exception is not None:
             raise exception.with_traceback(sys.exc_info()[2])  # pylint: disable=raise-missing-from
-    except Exception as excpt:
+    except Exception as excpt:  # pylint: disable=broad-except
         print("UNKNOWN - Error: %s" % (excpt))
         sys.exit(3)
