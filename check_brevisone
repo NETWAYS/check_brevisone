@@ -270,13 +270,13 @@ def determine_status(args, perfdata):
         states.append(OK)
 
     if perfdata['que'] >= args.queue_critical:
-        outputs.append(" \\_[CRITICAL] Que length: {}".format(perfdata['que']))
+        outputs.append(" \\_[CRITICAL] Queue length: {}".format(perfdata['que']))
         states.append(CRITICAL)
     elif perfdata['que'] >= args.queue_warning:
-        outputs.append(" \\_[WARNING] Que length: {}".format(perfdata['que']))
+        outputs.append(" \\_[WARNING] Queue length: {}".format(perfdata['que']))
         states.append(WARNING)
     else:
-        outputs.append(" \\_[OK] Que length: {}".format(perfdata['que']))
+        outputs.append(" \\_[OK] Queue length: {}".format(perfdata['que']))
         states.append(OK)
 
     if args.disk_critical and perfdata['disk'] >= args.disk_critical:

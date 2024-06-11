@@ -33,7 +33,7 @@ class UtilTesting(unittest.TestCase):
         s, o = determine_status(args, data)
 
         self.assertIn(' \\_[WARNING] Failed sending: 1', o)
-        self.assertIn(' \\_[CRITICAL] Que length: 5', o)
+        self.assertIn(' \\_[CRITICAL] Queue length: 5', o)
         self.assertIn(' \\_[OK] Signal strength: 0', o)
         self.assertIn(' \\_[OK] Disk usage: 1400', o)
 
@@ -42,7 +42,7 @@ class UtilTesting(unittest.TestCase):
         s, o = determine_status(args, data)
 
         self.assertIn(' \\_[OK] Failed sending: 0', o)
-        self.assertIn(' \\_[OK] Que length: 0', o)
+        self.assertIn(' \\_[OK] Queue length: 0', o)
         self.assertIn(' \\_[CRITICAL] Signal strength: -900', o)
         self.assertIn(' \\_[WARNING] Disk usage: 2000', o)
 
@@ -51,7 +51,7 @@ class UtilTesting(unittest.TestCase):
         s, o = determine_status(args, data)
 
         self.assertIn(' \\_[OK] Failed sending: 0', o)
-        self.assertIn(' \\_[OK] Que length: 0', o)
+        self.assertIn(' \\_[OK] Queue length: 0', o)
         self.assertIn(' \\_[CRITICAL] Signal strength: -900', o)
         self.assertIn(' \\_[CRITICAL] Disk usage: 4000', o)
 
