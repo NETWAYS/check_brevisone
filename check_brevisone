@@ -171,6 +171,7 @@ def get_data(base_url, timeout, insecure):
     # Default context for connection
     ctx = ssl.create_default_context()
     if insecure is True:
+        ctx.set_ciphers("DHE-RSA-AES256-GCM-SHA384:@SECLEVEL=1")
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
 
