@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-# COPYRIGHT:
-#
-# This software is Copyright (c) 2018 NETWAYS GmbH, Matthias Jentsch
-#                                <support@netways.de>
-#
-# (Except where explicitly superseded by other copyright notices)
-#
-# LICENSE:
 #
 # Copyright (C) 2020 NETWAYS GmbH <info@netways.de>
 #
@@ -25,23 +17,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 # or see <http://www.gnu.org/licenses/>.
 #
-# CONTRIBUTION SUBMISSION POLICY:
-#
-# (The following paragraph is not intended to limit the rights granted
-# to you to modify and distribute this software under the terms of
-# the GNU General Public License and is only of importance to you if
-# you choose to contribute your changes and enhancements to the
-# community by submitting them to NETWAYS GmbH.)
-#
-# By intentionally submitting any modifications, corrections or
-# derivatives to this work, or any other work intended for use with
-# this Software, to NETWAYS GmbH, you confirm that
-# you are the copyright holder for those contributions and you grant
-# NETWAYS GmbH a nonexclusive, worldwide, irrevocable,
-# royalty-free, perpetual, license to use, copy, create derivative
-# works based on those contributions, and sublicense and distribute
-# those contributions and any derivatives thereof.
-
 from argparse import ArgumentParser
 import urllib.request
 from urllib.parse import urljoin
@@ -55,7 +30,7 @@ import sys
 #                threshold or did not appear to be working properly
 # 2 - CRITICAL - The plugin detected that either the service was not running or it was above some "critical" threshold
 # 3 - UNKNOWN  - Invalid command line arguments were supplied to the plugin or low-level failures
-__version__ = '4.0.0-rc1'
+__version__ = '4.0.0'
 
 OK = 0
 WARNING = 1
